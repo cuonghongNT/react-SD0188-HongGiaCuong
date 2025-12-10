@@ -4,6 +4,7 @@ import userRoutes from "./user/user.routes";
 import Pages from "./pages";
 import authRoutes from "./auth/auth.routes";
 import Login from "./auth/login/Login";
+import SignUp from "./auth/sign-up/sign-up";
 
 
 const pageRoutes = [
@@ -22,6 +23,11 @@ const pageRoutes = [
             ...authRoutes,
             ...userRoutes
         ]
+    },
+    // Public root-level routes for direct internet access
+    {
+        path: 'auth/sign-up',
+        element: <SignUp/>
     },
         {
         path: 'login',

@@ -26,62 +26,55 @@ const Login: React.FC = () => {
     }, [auth, navigate]);
 
     const validate = () => {
-        const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const hasLetter = /[a-zA-Z]/.test(password);
-        const hasNumber = /[0-9]/.test(password);
-        const hasSpecial = /[@#&!]/.test(password);
         let ok = true;
+       /* const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
         if (!email || !emailRx.test(email)) {
             setEmailError('Please enter a valid email address.');
             ok = false;
         } else {
             setEmailError(null);
         }
-         if (!email || email.length < 8 || email.length > 10) {
-            setEmailError("Username must be 8–10 characters.");
+
+        if (!password || password.length < 6) {
+            setPasswordError('Password must be at least 6 characters.');
             ok = false;
         } else {
-            setEmailError(null);
-        }
-        if (!password) {
-            setPasswordError("Password is required.");
-            ok = false;
-        }
-        else if (password.length < 12 || password.length > 16) {
-            setPasswordError("Password must be 12–16 characters.");
-            ok = false;
-        }
-        else if (!hasLetter || !hasNumber || !hasSpecial) {
-            setPasswordError("Password must contain letters, numbers, and at least one of @,#,&,!");
-            ok = false;
-        }
-        else {
             setPasswordError(null);
         }
-
-            return ok;
-        };
+    */
+        return ok;
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         // basic client-side validation
         if (!validate()) return;
         // Fetch user from dummyjson and derive role (officer vs user)
-        setError(null);
-        setLoading(true);
         try {
+            // 1) Find user by email to get a username
             const res = await fetch(`https://dummyjson.com/users/search?q=${encodeURIComponent(email)}`);
             if (!res.ok) throw new Error('Failed to fetch user');
             const data = await res.json();
             const users = Array.isArray(data.users) ? data.users : [];
-            // Prefer exact email match
-            const found = users.find((u: any) => (u.email || '').toLowerCase() === email.toLowerCase()) || users[0];
+            const found = users.find((u: any) => (u.email || '').toLowerCase() === email.toLowerCase()) || null;
             if (!found) {
-                setError('No user found for that email');
+                setError('Incorrect email or password.');
                 return;
             }
 
-            // Map external role to app role. Treat admin/moderator as officer.
+            // 2) Verify password via dummyjson auth endpoint using found username
+            const loginRes = await fetch('https://dummyjson.com/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: found.username, password })
+            });
+            if (!loginRes.ok) {
+                setError('Incorrect email or password.');
+                return;
+            }
+
+            // 3) Successful auth: construct our app user and redirect
             const externalRole = (found.role || '').toLowerCase();
             const appRole: 'user' | 'officer' = ['admin', 'moderator'].includes(externalRole) ? 'officer' : 'user';
 
@@ -97,15 +90,15 @@ const Login: React.FC = () => {
 
             auth?.setUser(newUser);
 
-            // Redirect according to role
-            if (appRole === 'officer') {
-                navigate('/pages/clients');
-            } else {
-                navigate(`/pages/user/${id}/pi`);
+            if (remember) {
+                try { localStorage.setItem('auth_user', JSON.stringify(newUser)); } catch {}
             }
+
+            if (appRole === 'officer') navigate('/pages/clients');
+            else navigate(`/pages/user/${id}/pi`);
         } catch (err) {
             console.error(err);
-            setError('Unable to lookup user — try again later.');
+            setError('Unable to log in — try again later.');
         } finally {
             setLoading(false);
         }

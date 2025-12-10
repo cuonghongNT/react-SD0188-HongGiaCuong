@@ -2,19 +2,39 @@ import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 const SignUp: React.FC = () => {
+    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
     const [agree, setAgree] = useState(false);
-    const [errors, setErrors] = useState<{email?: string; password?: string; confirm?: string; agree?: string}>({});
+    const [errors, setErrors] = useState<{username?: string; email?: string; password?: string; confirm?: string; agree?: string}>({});
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const validate = () => {
         const e: typeof errors = {};
+        // Username: Required, Length (8-10)
+        if (!username) {
+            e.username = 'Username is required.';
+        } else if (username.length < 8 || username.length > 10) {
+            e.username = 'Username must be 8-10 characters.';
+        }
+
+        // Email validation
         const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!email || !emailRx.test(email)) e.email = 'Please enter a valid email address.';
-        if (!password || password.length < 6) e.password = 'Password must be at least 6 characters.';
+
+        // Password: Required, Length (12-16), Content({[a-zA-Z]}{[0-9]}{@,#,&,!})
+        const hasLetter = /[a-zA-Z]/.test(password);
+        const hasDigit = /[0-9]/.test(password);
+        const hasSpecial = /[@#&!]/.test(password);
+        if (!password) {
+            e.password = 'Password is required.';
+        } else if (password.length < 12 || password.length > 16) {
+            e.password = 'Password must be 12-16 characters.';
+        } else if (!hasLetter || !hasDigit || !hasSpecial) {
+            e.password = 'Password must include letters, numbers, and one of @ # & !';
+        }
         if (confirm !== password) e.confirm = 'Passwords do not match.';
         if (!agree) e.agree = 'You must accept the Terms and Conditions.';
         setErrors(e);
@@ -32,6 +52,7 @@ const SignUp: React.FC = () => {
         }, 600);
     };
 
+
     return (
 
         <div className="flex flex-col items-center justify-center px-6 pt-8 mx-auto md:h-screen pt:mt-0 dark:bg-gray-900">
@@ -45,13 +66,18 @@ const SignUp: React.FC = () => {
                 </h2>
                 <form onSubmit={handleSubmit} className="mt-8 space-y-6" action="#">
                     <div>
+                        <label htmlFor="username" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                        <input value={username} onChange={e => setUsername(e.target.value)} type="text" name="username" id="username" className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="yourname" required aria-invalid={!!errors.username} />
+                        {errors.username ? <div className="text-xs text-red-600 mt-1">{errors.username}</div> : null}
+                    </div>
+                    <div>
                         <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your email</label>
                         <input value={email} onChange={e => setEmail(e.target.value)} type="email" name="email" id="email" className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="name@company.com" required aria-invalid={!!errors.email} />
                         {errors.email ? <div className="text-xs text-red-600 mt-1">{errors.email}</div> : null}
                     </div>
                     <div>
                         <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your password</label>
-                        <input value={password} onChange={e => setPassword(e.target.value)} type="password" name="password" id="password" placeholder="••••••••" className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" required aria-invalid={!!errors.password} />
+                        <input value={password} onChange={e => setPassword(e.target.value)} type="password" name="password" id="password" placeholder="12-16 chars, include @ # & !" className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" required aria-invalid={!!errors.password} />
                         {errors.password ? <div className="text-xs text-red-600 mt-1">{errors.password}</div> : null}
                     </div>
                     <div>
